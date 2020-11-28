@@ -13,6 +13,7 @@ find_package(catkin REQUIRED COMPONENTS
   tf2
   tf2_ros
   tf2_sensor_msgs
+  tf_conversions
 
   pcl_ros
   pcl_conversions
@@ -21,14 +22,12 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   sensor_msgs
   nav_msgs
-  cloud_msgs
 )
 
 find_package(PCL REQUIRED QUIET)
 
 catkin_package(
   INCLUDE_DIRS include
-  CATKIN_DEPENDS cloud_msgs
   DEPENDS PCL
 )
 
@@ -44,12 +43,25 @@ link_directories(
 )
 
 add_executable(icp_map_merge src/icp_map_merge.cpp)
-add_dependencies(icp_map_merge ${catkin_EXPORTED_TARGETS} cloud_msgs_gencpp)
 target_link_libraries(icp_map_merge ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 
 add_executable(pure_icp src/pure_icp.cpp)
-add_dependencies(pure_icp ${catkin_EXPORTED_TARGETS} cloud_msgs_gencpp)
 target_link_libraries(pure_icp ${catkin_LIBRARIES} ${PCL_LIBRARIES})
+
+add_executable(icp_hw4 src/icp_hw4.cpp)
+target_link_libraries(icp_hw4 ${catkin_LIBRARIES} ${PCL_LIBRARIES})
+
+add_executable(icp_comp src/icp_comp.cpp)
+target_link_libraries(icp_comp ${catkin_LIBRARIES} ${PCL_LIBRARIES})
+
+add_executable(icp_comp_shot src/icp_comp_shot.cpp)
+target_link_libraries(icp_comp_shot ${catkin_LIBRARIES} ${PCL_LIBRARIES})
+
+add_executable(hw5 src/hw5.cpp)
+target_link_libraries(hw5 ${catkin_LIBRARIES} ${PCL_LIBRARIES})
+
+add_executable(load_map src/load_map.cpp)
+target_link_libraries(load_map ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
