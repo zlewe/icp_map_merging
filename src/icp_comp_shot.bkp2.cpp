@@ -135,7 +135,7 @@ IcpMapping::IcpMapping(){
     PassThrough<PointXYZI> pass;
     pass.setInputCloud (icp_map_voxel);
     pass.setFilterFieldName ("z");
-    pass.setFilterLimits (0.4, 8);
+    pass.setFilterLimits (0.8, 5);
     pass.filter (*icp_map_voxel);
 
     // CropBox<PointXYZI> crop;
@@ -201,7 +201,7 @@ Eigen::Matrix4f IcpMapping::get_initial_guess(){
     //gps_point = ros::topic::waitForMessage<geometry_msgs::PointStamped>("/gps", nh);
 
     tf::Quaternion q;
-    q.setRPY(0, 0, 4.107208360536);
+    q.setRPY(0, 0, 0.09369360536);
     Eigen::Quaternionf eq(q.w(), q.x(), q.y(), q.z());
 	Eigen::Matrix3f mat = eq.toRotationMatrix();
 
@@ -210,9 +210,9 @@ Eigen::Matrix4f IcpMapping::get_initial_guess(){
 	// 		mat(2,0), mat(2,1), mat(2,2), (*gps_point).point.z,
 	// 		0, 0, 0, 1;
 
-    trans << mat(0,0), mat(0,1), mat(0,2), 1716.40466004,
-			mat(1,0), mat(1,1), mat(1,2), 1014.50164193,
-			mat(2,0), mat(2,1), mat(2,2), -0.365639155011,
+    trans << mat(0,0), mat(0,1), mat(0,2), 1774.8362265,
+			mat(1,0), mat(1,1), mat(1,2), 866.367052112,
+			mat(2,0), mat(2,1), mat(2,2), 0.0153020292018,
 			0, 0, 0, 1;
 	return trans;
 }
@@ -275,22 +275,22 @@ void IcpMapping::pcCallback(const sensor_msgs::PointCloud2ConstPtr &pc){
     //=======cropbox filter=========================
     
     //crop outside
-    crop.setMin(Eigen::Vector4f(-100,-100,0.1,1.0)); //给定立体空间
-    crop.setMax(Eigen::Vector4f(100,100,20,1.0));  //数据随意给的，具体情况分析
+    crop.setMin(Eigen::Vector4f(-30,-40,1.2,1.0)); //给定立体空间
+    crop.setMax(Eigen::Vector4f(30,20,20,1.0));  //数据随意给的，具体情况分析
     crop.setInputCloud(pc_input);
     crop.setKeepOrganized(true);
     crop.setUserFilterValue(0.1f);
     crop.setNegative(false);
     crop.filter(*pc_input);
 
-    // //crop inside
-    // crop.setMin(Eigen::Vector4f(-30,-3,-10,1.0)); //给定立体空间
-    // crop.setMax(Eigen::Vector4f(30,12,30,1.0));  //数据随意给的，具体情况分析
-    // crop.setInputCloud(pc_input);
-    // crop.setKeepOrganized(true);
-    // crop.setUserFilterValue(0.1f);
-    // crop.setNegative(true);
-    // crop.filter(*pc_input);
+    //crop inside
+    crop.setMin(Eigen::Vector4f(-30,-3,-10,1.0)); //给定立体空间
+    crop.setMax(Eigen::Vector4f(30,12,30,1.0));  //数据随意给的，具体情况分析
+    crop.setInputCloud(pc_input);
+    crop.setKeepOrganized(true);
+    crop.setUserFilterValue(0.1f);
+    crop.setNegative(true);
+    crop.filter(*pc_input);
 
     std::cout << init_trans << std::endl;
     transformPointCloud (*pc_input, *pc_input, init_trans);
@@ -306,8 +306,8 @@ void IcpMapping::pcCallback(const sensor_msgs::PointCloud2ConstPtr &pc){
 
     toROSMsg(*pc_input_voxel, ros_cloud_msg);
 	ros_cloud_msg.header.frame_id = "world";
-    pc_pub.publish(ros_cloud_msg);
-    // ros::Duration(5).sleep();
+    //pc_pub.publish(ros_cloud_msg);
+    //ros::Duration(1).sleep();
     // cb.cloud1 = *pc_input;
     // cb.calculate_normals_cloud(0.5);
     // std::vector<int> indices;
@@ -379,13 +379,13 @@ void IcpMapping::pcCallback(const sensor_msgs::PointCloud2ConstPtr &pc){
         if (id != 1){
             icp.setInputSource(pc_input_voxel);
             icp.setInputTarget(pc_last);
-            icp.setMaximumIterations (100);
-            icp.setTransformationEpsilon (1e-09);
+            icp.setMaximumIterations (2000);
+            icp.setTransformationEpsilon (1e-10);
             icp.setRANSACOutlierRejectionThreshold (0.08);
             icp.setMaxCorrespondenceDistance (8);
             //icp.setEuclideanFitnessEpsilon (0.01);
             Eigen::Matrix4f guess;
-            guess << 1, 0, 0, 0.05,
+            guess << 1, 0, 0, 0.5,
                      0, 1, 0, 0.0,
                      0, 0, 1, 0.0,
                      0, 0, 0, 1.0;
@@ -402,8 +402,8 @@ void IcpMapping::pcCallback(const sensor_msgs::PointCloud2ConstPtr &pc){
         //copyPointCloud(*pc_input, *pc_last);
         icp.setInputSource(pc_input_voxel);
         icp.setInputTarget(icp_map_voxel);
-        icp.setMaximumIterations (500);
-        icp.setTransformationEpsilon (1e-09);
+        icp.setMaximumIterations (2000);
+        icp.setTransformationEpsilon (1e-10);
         icp.setRANSACOutlierRejectionThreshold (0.08);
         icp.setMaxCorrespondenceDistance (8);
         icp.align(*pc_input_voxel);
@@ -468,7 +468,7 @@ void IcpMapping::pcCallback(const sensor_msgs::PointCloud2ConstPtr &pc){
     //     outputFile.close();
     // }
 
-    if (id > 389){
+    if (id > 396){
         ROS_INFO("close: %lf, %lf",timestamp.toSec(), last_timestamp);
         outputFile.close();
     }
