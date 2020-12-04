@@ -65,8 +65,8 @@ double last_timestamp = 1556114916.473415;
 // std::string PATH = "/home/argsubt/ros_docker_ws/hw4/map.pcd";
 std::string PATH = "/home/argsubt/ros_docker_ws/localization_comp/SDC Localization Competition Data/map/nuscenes_map.pcd";
 // std::string BAG = "/home/argsubt/ros_docker_ws/localization_comp/SDC Localization Competition Data/sdc_localization_1.bag";
-std::string baseFrame = "base_link";
-std::string lidarFrame = "velodyne";
+std::string baseFrame = "car";
+std::string lidarFrame = "nuscenes_lidar";
 
 class IcpMapping{
     public:
@@ -115,7 +115,7 @@ IcpMapping::IcpMapping(){
     pc_last.reset(new PointCloud<PointXYZI>());
 
     pc_pub = nh.advertise<sensor_msgs::PointCloud2> ("/cloud_trans", 1);
-    map_filtered_pub = nh.advertise<sensor_msgs::PointCloud2> ("/map_cropped", 1, true);
+    map_filtered_pub = nh.advertise<sensor_msgs::PointCloud2> ("/map_cropped", 1);
     odom_pub = nh.advertise<nav_msgs::Odometry>("odom", 10);
 
     // pcl::io::loadPCDFile<pcl::PointXYZI>(PATH, *icp_map);
@@ -128,14 +128,14 @@ IcpMapping::IcpMapping(){
     // std::cerr << "PointCloud before filtering: " << icp_map->width * icp_map->height 
     //     << " data points (" << pcl::getFieldsList (*icp_map) << ")." << std::endl;
     // sor.setInputCloud(icp_map);
-    // sor.setLeafSize(0.35f, 0.35f, 0.35f);
+    // sor.setLeafSize(0.5f, 0.5f, 0.5f);
     // sor.filter(*icp_map_voxel);
 
     //=======passthrough filter=====================
     PassThrough<PointXYZI> pass;
     pass.setInputCloud (icp_map_voxel);
     pass.setFilterFieldName ("z");
-    pass.setFilterLimits (-20, 20);
+    pass.setFilterLimits (0.4, 8);
     pass.filter (*icp_map_voxel);
 
     // CropBox<PointXYZI> crop;
@@ -201,7 +201,7 @@ Eigen::Matrix4f IcpMapping::get_initial_guess(){
     //gps_point = ros::topic::waitForMessage<geometry_msgs::PointStamped>("/gps", nh);
 
     tf::Quaternion q;
-    q.setRPY(0, 0, -3.8078303612);
+    q.setRPY(0, 0, 4.107208360536);
     Eigen::Quaternionf eq(q.w(), q.x(), q.y(), q.z());
 	Eigen::Matrix3f mat = eq.toRotationMatrix();
 
@@ -210,9 +210,9 @@ Eigen::Matrix4f IcpMapping::get_initial_guess(){
 	// 		mat(2,0), mat(2,1), mat(2,2), (*gps_point).point.z,
 	// 		0, 0, 0, 1;
 
-    trans << mat(0,0), mat(0,1), mat(0,2),  -285.456721951,
-			mat(1,0), mat(1,1), mat(1,2), 225.77162962,
-			mat(2,0), mat(2,1), mat(2,2), -12.4146628257,
+    trans << mat(0,0), mat(0,1), mat(0,2), 1716.40466004,
+			mat(1,0), mat(1,1), mat(1,2), 1014.50164193,
+			mat(2,0), mat(2,1), mat(2,2), -0.365639155011,
 			0, 0, 0, 1;
 	return trans;
 }
@@ -301,7 +301,7 @@ void IcpMapping::pcCallback(const sensor_msgs::PointCloud2ConstPtr &pc){
     // SHOT
 
     sor.setInputCloud(pc_input);
-    sor.setLeafSize(0.3f, 0.3f, 0.3f);
+    sor.setLeafSize(0.5f, 0.5f, 0.5f);
     sor.filter(*pc_input_voxel);
 
     toROSMsg(*pc_input_voxel, ros_cloud_msg);
@@ -369,7 +369,7 @@ void IcpMapping::pcCallback(const sensor_msgs::PointCloud2ConstPtr &pc){
     // toROSMsg(*pc_input_voxel, ros_cloud_msg);
 	// ros_cloud_msg.header.frame_id = "world";
     // pc_pub.publish(ros_cloud_msg);
-    Eigen::MatrixXd ICP_COV(6,6);
+
     if (icp_map_voxel->empty()){
         ROS_INFO("Empty cloud");
     }
@@ -384,12 +384,12 @@ void IcpMapping::pcCallback(const sensor_msgs::PointCloud2ConstPtr &pc){
             icp.setRANSACOutlierRejectionThreshold (0.08);
             icp.setMaxCorrespondenceDistance (8);
             //icp.setEuclideanFitnessEpsilon (0.01);
-            // Eigen::Matrix4f guess;
-            // guess << 1, 0, 0, 0.05,
-            //          0, 1, 0, 0.0,
-            //          0, 0, 1, 0.0,
-            //          0, 0, 0, 1.0;
-            icp.align(*pc_input_voxel);
+            Eigen::Matrix4f guess;
+            guess << 1, 0, 0, 0.05,
+                     0, 1, 0, 0.0,
+                     0, 0, 1, 0.0,
+                     0, 0, 0, 1.0;
+            icp.align(*pc_input_voxel, guess);
             ROS_INFO("Score: %lf", icp.getFitnessScore());
             init_trans = (icp.getFinalTransformation()) * init_trans ;
         }
@@ -402,7 +402,7 @@ void IcpMapping::pcCallback(const sensor_msgs::PointCloud2ConstPtr &pc){
         //copyPointCloud(*pc_input, *pc_last);
         icp.setInputSource(pc_input_voxel);
         icp.setInputTarget(icp_map_voxel);
-        icp.setMaximumIterations (200);
+        icp.setMaximumIterations (500);
         icp.setTransformationEpsilon (1e-09);
         icp.setRANSACOutlierRejectionThreshold (0.08);
         icp.setMaxCorrespondenceDistance (8);
@@ -411,9 +411,10 @@ void IcpMapping::pcCallback(const sensor_msgs::PointCloud2ConstPtr &pc){
         init_trans = (icp.getFinalTransformation()) * init_trans ;
         std::cout << init_trans << std::endl;
         copyPointCloud(*pc_input_voxel, *pc_last);
-        Eigen::Matrix4f final_trans = icp.getFinalTransformation();
-        ICP_COV = Eigen::MatrixXd::Zero(6,6);
-        calculate_ICP_COV(*pc_input_voxel, *icp_map_voxel, final_trans, ICP_COV);
+        // Eigen::MatrixXd ICP_COV(6,6);
+        // Eigen::Matrix4f final_trans = icp.getFinalTransformation();
+        // ICP_COV = Eigen::MatrixXd::Zero(6,6);
+        // calculate_ICP_COV(*pc_input_voxel, *icp_map_voxel, final_trans, ICP_COV);
     }
     Eigen::Matrix3f rot;
 	rot << init_trans(0,0), init_trans(0,1), init_trans(0,2),
@@ -453,12 +454,6 @@ void IcpMapping::pcCallback(const sensor_msgs::PointCloud2ConstPtr &pc){
     quaternionTFToMsg(world_trans.getRotation() , quat_msg);
     odom.pose.pose.orientation = quat_msg;
 
-    boost::array<double, 36> covariance;
-    for (int i = 0; i < 6; i++)
-        for (int j = 0; j < 6; j++)
-            covariance[i*6+j] = ICP_COV(i,j);
-    odom.pose.covariance = covariance;
-
     tfScalar yaw, pitch, roll;
     tf::Matrix3x3 mat(world_trans.getRotation());
     mat.getEulerYPR(yaw, pitch, roll);
@@ -473,7 +468,7 @@ void IcpMapping::pcCallback(const sensor_msgs::PointCloud2ConstPtr &pc){
     //     outputFile.close();
     // }
 
-    if (id > 201){
+    if (id > 389){
         ROS_INFO("close: %lf, %lf",timestamp.toSec(), last_timestamp);
         outputFile.close();
     }
