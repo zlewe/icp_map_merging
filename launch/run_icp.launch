@@ -1,0 +1,15 @@
+<launch>
+  <arg name="file_path"  default="$(env PWD)"/>
+  <arg name="file_name"/>
+  <arg name="leaf_size"  default="0.5"/>
+
+  <node pkg="icp_map_merging" type="load_map" name="map_node" clear_params="true">
+    <param name="file_name"  value="$(arg file_name)"  type="string" />
+    <param name="file_path"  value="$(arg file_path)"  type="string" />
+    <param name="leaf_size"  value="$(arg leaf_size)"  type="double" />
+
+  </node>
+
+  <node pkg="icp_map_merging" type="icp_comp" name="icp_node"/>
+
+</launch>

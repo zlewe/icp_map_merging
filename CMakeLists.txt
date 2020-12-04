@@ -42,23 +42,23 @@ link_directories(
 	${PCL_LIBRARY_DIRS}
 )
 
-add_executable(icp_map_merge src/icp_map_merge.cpp)
-target_link_libraries(icp_map_merge ${catkin_LIBRARIES} ${PCL_LIBRARIES})
+## add_executable(icp_map_merge src/icp_map_merge.cpp)
+##target_link_libraries(icp_map_merge ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 
-add_executable(pure_icp src/pure_icp.cpp)
-target_link_libraries(pure_icp ${catkin_LIBRARIES} ${PCL_LIBRARIES})
+## add_executable(pure_icp src/pure_icp.cpp)
+## target_link_libraries(pure_icp ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 
-add_executable(icp_hw4 src/icp_hw4.cpp)
-target_link_libraries(icp_hw4 ${catkin_LIBRARIES} ${PCL_LIBRARIES})
+## add_executable(icp_hw4 src/icp_hw4.cpp)
+## target_link_libraries(icp_hw4 ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 
 add_executable(icp_comp src/icp_comp.cpp)
 target_link_libraries(icp_comp ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 
-add_executable(icp_comp_shot src/icp_comp_shot.cpp)
-target_link_libraries(icp_comp_shot ${catkin_LIBRARIES} ${PCL_LIBRARIES})
+## add_executable(icp_comp_shot src/icp_comp_shot.cpp)
+## target_link_libraries(icp_comp_shot ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 
-add_executable(hw5 src/hw5.cpp)
-target_link_libraries(hw5 ${catkin_LIBRARIES} ${PCL_LIBRARIES})
+## add_executable(hw5 src/hw5.cpp)
+## target_link_libraries(hw5 ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 
 add_executable(load_map src/load_map.cpp)
 target_link_libraries(load_map ${catkin_LIBRARIES} ${PCL_LIBRARIES})
